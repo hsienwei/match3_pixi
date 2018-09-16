@@ -1,6 +1,9 @@
 'use strict';
-var WAIT_UPDATE_TIME_UNIT = 1000;
-var WAIT_UPDATE_TIME_UNIT2 = 1000;
+
+var WAIT_UPDATE_TIME_UNIT = 500;
+var WAIT_UPDATE_TIME_UNIT2 = 300;
+var WAIT_CLEAR_TIME_UNIT = 300;
+
 
 var GridPos = function (vx, vy) {
 	this.x = vx;
@@ -16,7 +19,6 @@ var MatchRecord = function (x1, y1, x2, y2)
 	this.m_x2 = x2;
 	this.m_y2 = y2;
 }
-	
 
 MatchRecord.prototype.IsInside = function (x, y) {
 	return x >= this.m_x1 && x <= this.m_x2 && y >= this.m_y1 && y <= this.m_y2;
@@ -135,26 +137,6 @@ MatchGrid.prototype.IsMatch3 = function () {
 	return this.m_v >= 1 || this.m_h >= 1;
 }
 
- /* public int CompareTo(MatchGrid other)
-  {
-	if (other == null) return -1;
-	int Compare = Recs.Count.CompareTo(other.Recs.Count);
-	if(Compare == 0)
-	{
-	  if (Math.Abs(m_v - m_h) < Math.Abs(other.m_v - other.m_h))
-		Compare = 1;
-	  else
-		Compare = 0;
-	}
-	return -Compare;
-  }
-
-  public override string ToString()
-  {
-	return "" + m_BasePos.x + "," + m_BasePos.y + "," + m_v + "," + m_h;
-  }
-};
-*/
 // -------
 var MoveRecord = function (x1, x2, Direction)
 {
@@ -252,7 +234,6 @@ Gem.prototype.SetCountdown = function( Cnt, Callback = null)
   this.m_Callback = Callback;
 }
 
-
 Gem.prototype.SetClear = function()
 {
   this.m_State = this.State.Clear;
@@ -263,13 +244,7 @@ Gem.prototype.IsClear = function()
   return this.m_State == this.State.Clear;
 }
 
-
-
-//#endregion
-
-//#region GridState
-
-
+//======
 var GridState = function () {
 	this.m_Gem = null;
 };
@@ -347,15 +322,6 @@ var match3 = match3 || {
 
 	update : function(time_unit)
 	{
-		/*var str = ''
-		for(var j = 0; j< this.m_Row; ++j)
-		{
-			for(var i = 0; i< this.m_Col; ++i)
-			{
-				str += this.m_Grid[i+ 8 * j].m_Gem.m_Color;
-			}
-		}
-		console.log(str);*/
 
 		this.UpdateSwipe();
 		this.updateGem(time_unit);
@@ -366,25 +332,6 @@ var match3 = match3 || {
 		this.GemDrop();
 		this.generate(false);
 		this.ScanMatchPossible();
-		//CheckReset();
-
-
-
-
-		/*UpdateSwipe();
-		UpdateGem(TimeUnit);
-	
-		if (!m_IsMatchDebug)
-		{
-		  ScanMatch();
-		}
-	
-		SpecialRemoveGem();
-		AssignGemGen();
-		GemDrop();
-		Generate(false);
-		ScanMatchPossible();
-		CheckReset();*/
 		
 	},
 
@@ -393,28 +340,29 @@ var match3 = match3 || {
 	{
 	  for(var i=0; i< this.m_GemForceRemoveList.length; ++i)
 	  {
-		var SpRemove = this.m_GemForceRemoveList[i];
-  
-		var PosIdx = 0, x = 0, y = 0;
-		//while (SpRemove.Dequeue(ref PosIdx))
-		while (true)
-		{
-			var rtn = SpRemove.Dequeue();
-			if(rtn['result'] == false)    break;
+			var SpRemove = this.m_GemForceRemoveList[i];
+		
+			var PosIdx = 0, x = 0, y = 0;
+			//while (SpRemove.Dequeue(ref PosIdx))
+			while (true)
+			{
+				var rtn = SpRemove.Dequeue();
+				if(rtn['result'] == false)    break;
 
-		  var p = GridIdxToPos(rtn['val']);
-		  x = p.x;
-		  y = p.y;
-		  if (this.m_Grid[y* 8 + x].m_Gem == null || !this.m_Grid[y* 8 + x].m_Gem.IsCanMove()) 
-			continue;
-		  this.m_Grid[y* 8 + x].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT, this.OnGemMatchClear);
-		  if (this.m_CBClear != null)
-		  {
-			this.m_CBClear(x, y);
-		  }
-		}
-	  }
-  
+				var p = GridIdxToPos(rtn['val']);
+				x = p.x;
+        y = p.y;
+        var idx = rtn['val']
+				if (this.m_Grid[idx].m_Gem == null || !this.m_Grid[idx].m_Gem.IsCanMove()) 
+					continue;
+				this.m_Grid[idx].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT, this.OnGemMatchClear);
+				if (this.m_CBClear != null)
+				{
+					this.m_CBClear(x, y);
+        }
+      }
+	  } 
+    
 	  this.m_GemForceRemoveList.length = 0;
 	},
 
@@ -429,7 +377,8 @@ var match3 = match3 || {
 		m_GemForceRemoveList.push(SpMove);
 		for (var  i = 0; i < this.m_Row; ++i)
 		{
-		  if (this.m_Grid[TargetGem.m_TempPos.x + i * 8].m_Gem != null && this.m_Grid[TargetGem.m_TempPos.x + i * 8].m_Gem.IsCanMove())
+      let idx = GridPosToIdx2(TargetGem.m_TempPos.x, i);
+		  if (this.m_Grid[idx].m_Gem != null && this.m_Grid[idx].m_Gem.IsCanMove())
 		  {
 			SpMove.Enqueue(GridPosToIdx2(TargetGem.m_TempPos.x, i));
 		  }
@@ -443,9 +392,10 @@ var match3 = match3 || {
 	   
 		for (var i = 0; i < this.m_Col; ++i)
 		{
-		  if (this.m_Grid[i + 8 * TargetGem.m_TempPos.y].m_Gem != null && this.m_Grid[i+ 8 *TargetGem.m_TempPos.y].m_Gem.IsCanMove())
+      let idx = GridPosToIdx2(i, TargetGem.m_TempPos.y);
+		  if (this.m_Grid[idx].m_Gem != null && this.m_Grid[idx].m_Gem.IsCanMove())
 		  {
-			SpMove.Enqueue(GridPosToIdx(i, TargetGem.m_TempPos.y));
+			  SpMove.Enqueue(GridPosToIdx(i, TargetGem.m_TempPos.y));
 		  }
 		}
 	  }
@@ -453,29 +403,30 @@ var match3 = match3 || {
   
 	  if (TargetGem.m_Type == Gem.prototype.GemType.Bomb )
 	  {
-		var ColMin = TargetGem.m_TempPos.x - 1;
-		if (ColMin < 0) ColMin = 0;
-		var ColMax = TargetGem.m_TempPos.x + 1;
-		if (ColMax >= m_Col) ColMax = m_Col - 1;
-		var RowMin = TargetGem.m_TempPos.y - 1;
-		if (RowMin < 0) RowMin = 0;
-		var RowMax = TargetGem.m_TempPos.y + 1;
-		if (RowMax >= m_Row) RowMax = m_Row - 1;
-  
-  
-		var SpMove = new SpecialRemove(TargetGem.m_Type);
-		m_GemForceRemoveList.Add(SpMove);
-  
-		for (var i = ColMin; i <= ColMax; ++i)
-		{
-		  for (var j = RowMin; j <= RowMax; ++j)
-		  {
-			if (this.m_Grid[i+ 8 * j].m_Gem != null && this.m_Grid[i+ 8 * j].m_Gem.IsCanMove())
-			{
-			  SpMove.Enqueue(GridPosToIdx(i, j));
-			}
-		  }
-		}
+      var ColMin = TargetGem.m_TempPos.x - 1;
+      if (ColMin < 0) ColMin = 0;
+      var ColMax = TargetGem.m_TempPos.x + 1;
+      if (ColMax >= m_Col) ColMax = m_Col - 1;
+      var RowMin = TargetGem.m_TempPos.y - 1;
+      if (RowMin < 0) RowMin = 0;
+      var RowMax = TargetGem.m_TempPos.y + 1;
+      if (RowMax >= m_Row) RowMax = m_Row - 1;
+    
+    
+      var SpMove = new SpecialRemove(TargetGem.m_Type);
+      m_GemForceRemoveList.Add(SpMove);
+    
+      for (var i = ColMin; i <= ColMax; ++i)
+      {
+        for (var j = RowMin; j <= RowMax; ++j)
+        {
+          let idx = GridPosToIdx2(i, j);
+          if (this.m_Grid[idx].m_Gem != null && this.m_Grid[idx].m_Gem.IsCanMove())
+          {
+            SpMove.Enqueue(GridPosToIdx(i, j));
+          }
+        }
+      }
 	  }
 	},
 
@@ -483,29 +434,31 @@ var match3 = match3 || {
 	{
 	  for (var i = 0; i < this.m_Col; ++i)
 	  {
-		var EmptyCnt = 0;
-		for (var j = this.m_Row - 1; j >= 0; --j)
-		{
-		  if (this.m_Grid[i+ 8 * j].m_Gem == null)
-		  {
-			EmptyCnt++;
-		  }
-		  else
-		  {
-			if (!this.m_Grid[i+ 8 * j].m_Gem.IsCanMove())
-			  EmptyCnt = 0;
-  
-			if (EmptyCnt == 0)
-			  continue;
-  
-			if (this.m_Grid[i+ 8 * (j + EmptyCnt)].m_Gem == null ||
-				this.m_Grid[i+ 8 * (j + EmptyCnt)].m_Gem.IsCanMove())
-			{
-				this.ChangeGem(i, j, i, j + EmptyCnt);
-			  
-			}
-		  }
-		}
+      var EmptyCnt = 0;
+      for (var j = this.m_Row - 1; j >= 0; --j)
+      {
+        let curIdx = this.GridPosToIdx2(i, j);
+        if (this.m_Grid[curIdx].m_Gem == null)
+        {
+          EmptyCnt++;
+        }
+        else
+        {
+          if (!this.m_Grid[curIdx].m_Gem.IsCanMove())
+            EmptyCnt = 0;
+      
+          if (EmptyCnt == 0)
+            continue;
+      
+          let dropIdx = this.GridPosToIdx2(i, (j + EmptyCnt));
+          if (this.m_Grid[dropIdx].m_Gem == null ||
+            this.m_Grid[dropIdx].m_Gem.IsCanMove())
+          {
+            this.ChangeGem(i, j, i, j + EmptyCnt);
+            
+          }
+        }
+      }
 	  }
 	},
 
@@ -561,107 +514,21 @@ var match3 = match3 || {
 			return -Compare;
 		});
 
-		// 
-		//foreach (MatchGrid entry in List2)
 		for (var i = 0; i < List2.length; ++i) {
 			var entry = List2[i];
 			var BaseIdx = this.GridPosToIdx2(entry.m_BasePos.x, entry.m_BasePos.y);
-			//if (!List.ContainsKey(BaseIdx)) continue;
+
 			if (!(BaseIdx in List)) continue;
-
-			/*
-			if (entry.IsMatch5())
-			{
-			  // 移除該組合中, 每一格在索引中的MatchGrid.
-			  var Pos = entry.m_AllGrid;
-			  m_GemAssignList[BaseIdx] = new IntVector2(0, (int)Gem.GemType.Wildcard);
-			  for (int i=0; i < Pos.Count; ++i)
-			  {
-				int Idx = GridPosToIdx(Pos[i]);
-				if (List.Remove(Idx))
-				{
-				  m_Grid[Pos[i].x, Pos[i].y].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT, OnGemMatchClear);
-				  if (m_CBClear != null)
-				  {
-					m_CBClear(Pos[i].x, Pos[i].y);
-				  }
-				}
-			  }
-			  continue;
-			}
-	  
-			if (entry.IsMatchT())
-			{
-			  // 移除該組合中, 每一格在索引中的MatchGrid.
-			  var Pos = entry.m_AllGrid;
-			  m_GemAssignList[BaseIdx] = new IntVector2(GetMatchColor(entry.BasePos.x, entry.BasePos.y), (int)Gem.GemType.Bomb);
-			  for (int i = 0; i < Pos.Count; ++i)
-			  {
-				int Idx = GridPosToIdx(Pos[i]);
-				if (List.Remove(Idx))
-				{
-				  m_Grid[Pos[i].x, Pos[i].y].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT, OnGemMatchClear);
-				  if (m_CBClear != null)
-				  {
-					m_CBClear(Pos[i].x, Pos[i].y);
-				  }
-				}
-			  }
-			  continue;
-			}
-	  
-			if (entry.IsMatch4())
-			{
-			  // 移除該組合中, 每一格在索引中的MatchGrid.
-			  var Pos = entry.m_AllGrid;
-			  m_GemAssignList[BaseIdx] = new IntVector2(GetMatchColor(entry.BasePos.x, entry.BasePos.y), (entry.m_v > entry.m_h)? (int)Gem.GemType.LineColumn:(int)Gem.GemType.LineRow);
-			  for (int i = 0; i < Pos.Count; ++i)
-			  {
-				int Idx = GridPosToIdx(Pos[i]);
-				if (List.Remove(Idx))
-				{
-				  m_Grid[Pos[i].x, Pos[i].y].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT, OnGemMatchClear);
-				  if (m_CBClear != null)
-				  {
-					m_CBClear(Pos[i].x, Pos[i].y);
-				  }
-				}
-			  }
-			  continue;
-			}
-	  
-			if (entry.IsMatchS())
-			{
-			  var Pos = entry.m_AllGrid;
-			  m_GemAssignList[BaseIdx] = new IntVector2(0, (int)Gem.GemType.Cross);
-	  
-			  for (int i = 0; i < Pos.Count; ++i)
-			  {
-				int Idx = GridPosToIdx(Pos[i]);
-				if (List.Remove(Idx))
-				{
-				  m_Grid[Pos[i].x, Pos[i].y].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT, OnGemMatchClear);
-				  if (m_CBClear != null)
-				  {
-					m_CBClear(Pos[i].x, Pos[i].y);
-				  }
-				}
-			  }
-			  continue;
-			}
-	  */
-
-	  
 
 			if (entry.IsMatch3()) {
 				// 移除該組合中, 每一格在索引中的MatchGrid.
 				var Pos = entry.m_AllGrid;
 				for (var i = 0; i < Pos.length; ++i) {
 					var Idx = this.GridPosToIdx2(Pos[i].x, Pos[i].y);
-					//if (List.Remove(Idx))
 					if (Idx in List) {
-						delete List[Idx];
-						this.m_Grid[Pos[i].x+ 8 * Pos[i].y].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT, this.OnGemMatchClear);
+            delete List[Idx];
+            let idx = this.GridPosToIdx(Pos[i]);
+						this.m_Grid[idx].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT, this.OnGemMatchClear);
 						if (this.m_CBClear != null) {
 							this.m_CBClear(Pos[i].x, Pos[i].y);
 						}
@@ -674,7 +541,8 @@ var match3 = match3 || {
 
 	CheckMatch : function( Col,  Row)
 	{
-	  if (!this.m_Grid[Col+ 8 * Row].IsCanMove())
+    let idx = this.GridPosToIdx2(Col, Row);
+	  if (!this.m_Grid[idx].IsCanMove())
 		return false;
   
 	  var CurrColor = this.GetMatchColor(Col, Row);
@@ -719,69 +587,18 @@ var match3 = match3 || {
 		  Row + CheckPos[this.Direction.DOWN][1]));
 		IsMatch = true;
 	  }
-  /*
-	  // oo-
-	  // oo-
-	  // ---
-	  if (CheckSameState[this.Direction.UP] && CheckSameState[this.Direction.LEFT] && CheckSameState[this.Direction.LU])
-	  {
-		this.m_MatchRecs.push(new MatchRecord(
-		  Col + CheckPos[this.Direction.LU][0],
-		  Row + CheckPos[this.Direction.LU][1],
-		  Col ,
-		  Row ));
-		IsMatch = true;
-	  }
   
-	  // -oo
-	  // -oo
-	  // ---
-	  if (CheckSameState[this.Direction.UP] && CheckSameState[this.Direction.RIGHT] && CheckSameState[this.Direction.RU])
-	  {
-		this.m_MatchRecs.push(new MatchRecord(
-		  Col + CheckPos[this.Direction.UP][0],
-		  Row + CheckPos[this.Direction.UP][1],
-		  Col + CheckPos[this.Direction.RIGHT][0],
-		  Row + CheckPos[this.Direction.RIGHT][1]));
-		IsMatch = true;
-	  }
-  
-	  // ---
-	  // oo-
-	  // oo-
-	  if (CheckSameState[this.Direction.DOWN] && CheckSameState[this.Direction.LEFT] && CheckSameState[this.Direction.LD])
-	  {
-		this.m_MatchRecs.push(new MatchRecord(
-		  Col + CheckPos[this.Direction.LEFT][0],
-		  Row + CheckPos[this.Direction.LEFT][1],
-		  Col + CheckPos[this.Direction.DOWN][0],
-		  Row + CheckPos[this.Direction.DOWN][1]));
-		IsMatch = true;
-	  }
-  
-	  // ---
-	  // -oo
-	  // -oo
-	  if (CheckSameState[this.Direction.DOWN] && CheckSameState[this.Direction.RIGHT] && CheckSameState[this.Direction.RD])
-	  {
-		this.m_MatchRecs.push(new MatchRecord(
-		  Col ,
-		  Row ,
-		  Col + CheckPos[this.Direction.RD][0],
-		  Row + CheckPos[this.Direction.RD][1]));
-		IsMatch = true;
-	  }
-  */
 	  return IsMatch;
 	},
 
 	SameColorCheck_: function( TargetColor,  TargetPosX,  TargetPosY,  PosOffsetX,  PosOffsetY)
 	{
 	  var Col = TargetPosX + PosOffsetX;
-	  var Row = TargetPosY + PosOffsetY;
+    var Row = TargetPosY + PosOffsetY;
+    let idx = this.GridPosToIdx2(Col, Row);
 	  if (Col >= 0 && Col < this.m_Col && Row >= 0 && Row < this.m_Row)
 	  {
-		if (this.m_Grid[Col+ 8 * Row].IsCanMove())
+		if (this.m_Grid[idx].IsCanMove())
 		  return (TargetColor == this.GetMatchColor(Col, Row));
 	  }
 	  return false;
@@ -790,10 +607,11 @@ var match3 = match3 || {
 	GetMatchColor: function( Col,  Row)
 	{
 	  if (Col < 0 || Col >= this.m_Col) return -1;
-	  if (Row < 0 || Row >= this.m_Row) return -1;
-	  if (this.m_Grid[Col+ 8 * Row].m_Gem === null)
+    if (Row < 0 || Row >= this.m_Row) return -1;
+    let idx = this.GridPosToIdx2(Col, Row);
+	  if (this.m_Grid[idx].m_Gem === null)
 		return -1;
-	  return this.m_Grid[Col+ 8 * Row].m_Gem.m_Color;
+	  return this.m_Grid[idx].m_Gem.m_Color;
 	},
 
 	ScanMatchPossible : function()
@@ -820,7 +638,9 @@ var match3 = match3 || {
 	  // .......   ..|....   ....|..   ...|...
 	  // .......   .......   .......   ...|...
   
-	  if (!this.m_Grid[Col+ 8 * Row].IsCanMove())
+    let idx = this.GridPosToIdx2(Col, Row);
+
+	  if (!this.m_Grid[idx].IsCanMove())
 		return 0;
   
 	  var CurrColor = this.GetColor(Col, Row);
@@ -997,21 +817,6 @@ var match3 = match3 || {
 	  return Cnt;
 	},
 
-	/*CheckReset: function()
-	{
-	  if (this.m_SwipeRecs.Count > 0) return;
-	  if (this.m_PossibleMove.Count > 0) return;
-	  for (var i = 0; i < this.m_Col; ++i)
-	  {
-		for (var j = 0; j <  this.m_Row; ++j)
-		{
-		  if (!this.m_Grid[i, j].IsCanMove()) return;
-		}
-	  }
-  
-	  Reset();
-	}*/
-
 	updateGem : function(time_unit)
 	{
 		// 更新珠子, 清除已消除資料.
@@ -1019,11 +824,12 @@ var match3 = match3 || {
 		{
 		for (var  j = 0; j < this.m_Row; ++j)
 		{
-			if (this.m_Grid[i+ 8 * j].m_Gem != null)
+      let idx = this.GridPosToIdx2(i, j);
+			if (this.m_Grid[idx].m_Gem != null)
 			{
-				this.m_Grid[i+ 8 * j].m_Gem.Update(time_unit);
-				if (this.m_Grid[i+ 8 * j].m_Gem.IsClear())
-					this.m_Grid[i+ 8 * j].m_Gem = null;
+				this.m_Grid[idx].m_Gem.Update(time_unit);
+				if (this.m_Grid[idx].m_Gem.IsClear())
+					this.m_Grid[idx].m_Gem = null;
 			}
 		}
 		}
@@ -1035,19 +841,20 @@ var match3 = match3 || {
 		{
 		  for (var  i = 0; i < this.m_Col; ++i)
 		  {
-			for (var j = 0; j < this.m_Row; ++j)
-			{
-			  if (is_init)
-			  {
-				this.m_Grid[i+ 8 * j] = new GridState();
-				this.m_Grid[i+ 8 * j].GenGem(Math.floor(Math.random() *  this.m_ColorCount), new GridPos(i, j));
-				this.m_Grid[i+ 8 * j].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT);
-				if (this.m_CBGenerate != null)
-				{
-					this.m_CBGenerate(i, j, this.m_Grid[i+ 8 * j].m_Gem.m_Color, this.m_Grid[i+ 8 * j].m_Gem.m_Type, WAIT_UPDATE_TIME_UNIT2);
-				}
-			  }
-			}
+        for (var j = 0; j < this.m_Row; ++j)
+        {
+          if (is_init)
+          {
+            let idx = this.GridPosToIdx2(i, j);
+            this.m_Grid[idx] = new GridState();
+            this.m_Grid[idx].GenGem(Math.floor(Math.random() *  this.m_ColorCount), new GridPos(i, j));
+            this.m_Grid[idx].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT);
+            if (this.m_CBGenerate != null)
+            {
+              this.m_CBGenerate(i, j, this.m_Grid[idx].m_Gem.m_Color, this.m_Grid[idx].m_Gem.m_Type, WAIT_UPDATE_TIME_UNIT2);
+            }
+          }
+        }
 		  }
 		  return;
 		}
@@ -1056,24 +863,25 @@ var match3 = match3 || {
 		{
 		  for (var j = 0; j < this.m_Row; ++j)
 		  {
-			// 由上往下掃 空格補珠, 如果遇到阻塞就換column.
-			if (this.m_Grid[i+ 8 * j].m_Gem == null)
-			{
-				this.m_Grid[i+ 8 * j].GenGem(Math.floor(Math.random() *  this.m_ColorCount), new GridPos(i, j));
-				this.m_Grid[i+ 8 * j].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT2);
-			  if (this.m_CBGenerate != null)
-			  {
-				this.m_CBGenerate(i, j, this.m_Grid[i+ 8 * j].m_Gem.m_Color, this.m_Grid[i+ 8 * j].m_Gem.m_Type, WAIT_UPDATE_TIME_UNIT2);
-			  }
-			  break;
-			}
-			else
-			{
-			  if( !this.m_Grid[i+ 8 * j].m_Gem.IsCanMove())
-			  {
-				break;
-			  }
-			}
+        // 由上往下掃 空格補珠, 如果遇到阻塞就換column.
+        let idx = this.GridPosToIdx2(i, j);
+        if (this.m_Grid[idx].m_Gem == null)
+        {
+          this.m_Grid[idx].GenGem(Math.floor(Math.random() *  this.m_ColorCount), new GridPos(i, j));
+          this.m_Grid[idx].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT2);
+          if (this.m_CBGenerate != null)
+          {
+          this.m_CBGenerate(i, j, this.m_Grid[idx].m_Gem.m_Color, this.m_Grid[idx].m_Gem.m_Type, WAIT_UPDATE_TIME_UNIT2);
+          }
+          break;
+        }
+        else
+        {
+          if( !this.m_Grid[idx].m_Gem.IsCanMove())
+          {
+          break;
+          }
+        }
 		  }
 		}
 	},
@@ -1085,10 +893,11 @@ var match3 = match3 || {
 	GetColor : function( Col,  Row)
 	{
 	  if (Col < 0 || Col >= this.m_Col) return -1;
-	  if (Row < 0 || Row >= this.m_Row) return -1;
-	  if (this.m_Grid[Col+ 8 * Row].m_Gem === null)
+    if (Row < 0 || Row >= this.m_Row) return -1;
+    let idx = this.GridPosToIdx2(Col, Row);
+	  if (this.m_Grid[idx].m_Gem === null)
 		return -1;
-	  return this.m_Grid[Col+ 8 * Row].m_Gem.Color;
+	  return this.m_Grid[idx].m_Gem.Color;
 	},
 
 	swipe : function( Col,  Row,  Dir)
@@ -1113,8 +922,8 @@ var match3 = match3 || {
 	  if (Target.y < 0) return false;
 	  if (Target.y >= this.m_Row) return false;
   
-	  if (!this.m_Grid[Col+ 8 * Row].IsCanMove()) return false;
-	  if (!this.m_Grid[Target.x+ 8 * Target.y].IsCanMove()) return false;
+	  if (!this.m_Grid[this.GridPosToIdx2(Col, Row)].IsCanMove()) return false;
+	  if (!this.m_Grid[this.GridPosToIdx(Target)].IsCanMove()) return false;
   
 	  this.m_SwipeRecs.push(new SwipeRecord(new GridPos(Col, Row), Target, SwipeRecord.prototype.START));
 	  
@@ -1126,9 +935,10 @@ var match3 = match3 || {
 		// 執行swipe行為.
 		for (var i = 0; i < this.m_SwipeRecs.length; ++i)
 		{
-			var Rec = this.m_SwipeRecs[i];
-			var Grid1 = this.m_Grid[Rec.m_Pos1.x+ 8 * Rec.m_Pos1.y];
-			var Grid2 = this.m_Grid[Rec.m_Pos1.x+ 8 * Rec.m_Pos1.y];
+      var Rec = this.m_SwipeRecs[i];
+      let idx = this.GridPosToIdx(Rec.m_Pos1);
+			var Grid1 = this.m_Grid[idx];
+			var Grid2 = this.m_Grid[idx];
 			if (Grid1.m_Gem === null 
 				|| !Grid1.m_Gem.IsCanMove())
 				continue;
@@ -1192,45 +1002,44 @@ var match3 = match3 || {
 
 	ChangeGem : function( x1,  y1,  x2,  y2,  oneWay = true)
 	{
-	  var Grid1 = this.m_Grid[x1+ 8 * y1];
-	  var Grid2 = this.m_Grid[x2+ 8 * y2];
+    let idx1 = this.GridPosToIdx2(x1, y1);
+    let idx2 = this.GridPosToIdx2(x2, y2);
+
+	  var Grid1 = this.m_Grid[idx1];
+	  var Grid2 = this.m_Grid[idx2];
   
 	  if (true)
 	  {
-		var Tmp = Grid1.m_Gem;
-		Grid1.m_Gem = Grid2.m_Gem;
-		Grid2.m_Gem = Tmp;
-  
-		if (Grid1.m_Gem != null)
-		{
-			Grid1.m_Gem.m_TempPos.x = x1;
-			Grid1.m_Gem.m_TempPos.y = y1;
-		}
-		if (Grid2.m_Gem != null)
-		{
-			Grid2.m_Gem.m_TempPos.x = x2;
-			Grid2.m_Gem.m_TempPos.y = y2;
-		}
-  
-		this.m_CBMove(x1, y1, x2, y2, 1);
-  
-		if (this.m_Grid[x1+ 8 * y1].m_Gem != null)
-			this.m_Grid[x1+ 8 * y1].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT2);
-		if (this.m_Grid[x2+ 8 * y2].m_Gem != null)
-			this. m_Grid[x2+ 8 * y2].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT2);
-  
-		
+      var Tmp = Grid1.m_Gem;
+      Grid1.m_Gem = Grid2.m_Gem;
+      Grid2.m_Gem = Tmp;
+    
+      if (Grid1.m_Gem != null)
+      {
+        Grid1.m_Gem.m_TempPos.x = x1;
+        Grid1.m_Gem.m_TempPos.y = y1;
+      }
+      if (Grid2.m_Gem != null)
+      {
+        Grid2.m_Gem.m_TempPos.x = x2;
+        Grid2.m_Gem.m_TempPos.y = y2;
+      }
+    
+      this.m_CBMove(x1, y1, x2, y2, 1);
+    
+      if (this.m_Grid[idx1].m_Gem != null)
+        this.m_Grid[idx1].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT2);
+      if (this.m_Grid[idx2].m_Gem != null)
+        this. m_Grid[idx2].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT2);
 	  }
 	  else
 	  {
-  
- 
-		this.m_CBMove(x1, y1, x2, y2, 2);
-  
-		if (this.m_Grid[x1+ 8 * y1].m_Gem != null)
-			this.m_Grid[x1+ 8 * y1].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT * 2);
-		if (this.m_Grid[x2+ 8 * y2].m_Gem != null)
-			this.m_Grid[x2+ 8 * y2].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT * 2);
+      this.m_CBMove(x1, y1, x2, y2, 2);
+    
+      if (this.m_Grid[idx1].m_Gem != null)
+        this.m_Grid[idx1].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT * 2);
+      if (this.m_Grid[idx2].m_Gem != null)
+        this.m_Grid[idx2].m_Gem.SetCountdown(WAIT_UPDATE_TIME_UNIT * 2);
 	  }
   
 	}
@@ -1286,16 +1095,20 @@ function onAssetsLoaded()
 
 		gemContainer.addChild(gem);
 
-		tweenTo(gem, "alpha", 1, 100, backout(0.6), null, null);
+		tweenTo(gem, "alpha", 1, WAIT_UPDATE_TIME_UNIT, backout(0.6), null, null);
 
-		Grid[y* 8 + x] = gem;
+    let idx = match3.GridPosToIdx2(x, y);
+		Grid[idx] = gem;
 	}
 
 	match3.m_CBMove = function(Col,  Row,  TargetCol,  TargetRow,  MoveType)
 	{
-		//console.log(x, y, color, type, time);
-		var GemA = Grid[ Row * 8 + Col];
-		var GemB = Grid[ TargetRow* 8 +TargetCol];
+    //console.log(x, y, color, type, time);
+    let idxA = match3.GridPosToIdx2(Col, Row);
+    let idxB = match3.GridPosToIdx2(TargetCol, TargetRow);
+
+		var GemA = Grid[ idxA];
+		var GemB = Grid[ idxB];
 	
 		/*if (MoveType == MatchThreeCore.MOVE_TYPE_MOVE)
 		{
@@ -1315,20 +1128,20 @@ function onAssetsLoaded()
 		  {
 			//GemB.x = Col * 70;
 			//GemB.y = Row * 70;
-			tweenTo(GemB, "x", Col * 70, 100, backout(0.6), null, null);
-			tweenTo(GemB, "y", Row * 70, 100, backout(0.6), null, null);
+			tweenTo(GemB, "x", Col * 70, WAIT_UPDATE_TIME_UNIT, backout(0.6), null, null);
+			tweenTo(GemB, "y", Row * 70, WAIT_UPDATE_TIME_UNIT, backout(0.6), null, null);
 		  }
 
 		  if(GemA != null)
 		  {
 			//GemA.x = TargetCol * 70;
 			//GemA.y = TargetRow * 70;
-			tweenTo(GemA, "x", TargetCol * 70, 100, backout(0.6), null, null);
-			tweenTo(GemA, "y", TargetRow * 70, 100, backout(0.6), null, null);
+			tweenTo(GemA, "x", TargetCol * 70, WAIT_UPDATE_TIME_UNIT, backout(0.6), null, null);
+			tweenTo(GemA, "y", TargetRow * 70, WAIT_UPDATE_TIME_UNIT, backout(0.6), null, null);
 		  }
 	
-		  Grid[Row * 8 + Col] = GemB;
-		  Grid[TargetRow * 8 + TargetCol] = GemA;
+		  Grid[idxA] = GemB;
+		  Grid[idxB] = GemA;
 		}
 		else if (MoveType == 2)
 		{
@@ -1340,17 +1153,17 @@ function onAssetsLoaded()
 
 	match3.m_CBClear = function(x, y)
 	{
-  
-	  if (Grid[y* 8 + x] == null)
+    let idx = match3.GridPosToIdx2(x, y);
+	  if (Grid[idx] == null)
 	  {
 		console.log("error" , x, y);
 		return;
 	  }
   
-	  var Gem = Grid[y* 8 + x];
-	  Grid[y* 8 + x] = null;
+	  var Gem = Grid[idx];
+	  Grid[idx] = null;
 	  
-	  tweenTo(Gem, "alpha", 0, 100, backout(0.6), null, function(){gemContainer.removeChild(Gem);});
+	  tweenTo(Gem, "alpha", 0, WAIT_CLEAR_TIME_UNIT, backout(0.6), null, function(){gemContainer.removeChild(Gem);});
 
 	  
 	}
@@ -1387,7 +1200,7 @@ function onAssetsLoaded()
 			}
 		}
 
-		else if( Math.abs( SwipeDeltaX ) > Math.abs( SwipeDeltaY ) )
+		else //if( Math.abs( SwipeDeltaX ) > Math.abs( SwipeDeltaY ) )
 		{
 			if (SwipeDeltaX > 0)
 			{
@@ -1510,7 +1323,8 @@ function onAssetsLoaded()
 
 	// Listen for animate update.
 	app.ticker.add(function(delta) {
-		match3.update(delta * 1000);
+		match3.update(delta * app.ticker.elapsedMS );
+
 		//Update the slots.
 		/*for( var i = 0; i < reels.length; i++)
 		{
