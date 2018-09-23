@@ -118,7 +118,7 @@ class SpecialRemove {
     if (this.m_PosList.length == 0)
       rtn['result'] = false;
     rtn['val'] = this.m_PosList[0];
-    this.splice(0, 1);
+    this.m_PosList.splice(0, 1);
     rtn['result'] = true;
   
     return rtn;
@@ -126,15 +126,15 @@ class SpecialRemove {
 }
 
 class MoveRecord{
-  constructor(x1, x2, direction)
+  constructor(x, y, direction)
   {
-    this.m_x1 = x1;
-    this.m_x2 = x2;
+    this.m_x = x;
+    this.m_y = y;
     this.m_direction = direction;
   }
 
   IsEqual(x, y, dir) {
-    return x == this.m_x1 && y == this.m_y1 && this.m_direction == dir;
+    return x == this.m_x && y == this.m_y && this.m_direction == dir;
   }
 }
 
@@ -184,7 +184,7 @@ class Gem{
   InitByState(State, Pos) {
     this.m_Color = State.GemColor;
     this.m_TempPos = Pos;
-    this.m_Type = Gem.State.GemType;
+    this.m_Type = Gem.GemType.Normal;
     this.m_State = Gem.State.Idle;
     this.m_Callback = null;
     this.m_Countdown = 0;
@@ -362,7 +362,7 @@ var match3 = match3 || {
       for (var i = 0; i < this.m_Col; ++i) {
         let idx = GridPosToIdx2(i, TargetGem.m_TempPos.y);
         if (this.m_Grid[idx].m_Gem != null && this.m_Grid[idx].m_Gem.IsCanMove()) {
-          SpMove.Enqueue(GridPosToIdx(i, TargetGem.m_TempPos.y));
+          SpMove.Enqueue(GridPosToIdx2(i, TargetGem.m_TempPos.y));
         }
       }
     }
@@ -386,7 +386,7 @@ var match3 = match3 || {
         for (var j = RowMin; j <= RowMax; ++j) {
           let idx = GridPosToIdx2(i, j);
           if (this.m_Grid[idx].m_Gem != null && this.m_Grid[idx].m_Gem.IsCanMove()) {
-            SpMove.Enqueue(GridPosToIdx(i, j));
+            SpMove.Enqueue(GridPosToIdx2(i, j));
           }
         }
       }
