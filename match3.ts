@@ -1,6 +1,6 @@
 'use strict';
 
-namespace Match3 {
+export namespace Match3 {
 
 class Dictionary<T>{
     [index : number] : T;
@@ -52,6 +52,13 @@ class Dic<T1, T2>{
 
     return rtn;
   }
+
+  isExist(k: T1) : boolean
+  {
+    let idx = this.key.indexOf(k);
+    return (idx != -1);
+  }
+
 
   size()
   {
@@ -565,9 +572,11 @@ export class Match3Main
         if (val == null) {
           List.set(Idx, new MatchGrid(Grids[j].x, Grids[j].y));
         }
-        else {
+//else {
+        val = List.getVal(Idx).val;
+        if(val)
           val.AddMatchRecord(this.m_MatchRecs[i]);
-        }
+//        }
       }
     }
     // 依照該格的消除次數做排序.
@@ -597,14 +606,16 @@ export class Match3Main
       var entry = List2[i];
       var BaseIdx = this.GridPosToIdx2(entry.m_BasePos.x, entry.m_BasePos.y);
 
-      if (!(BaseIdx in List)) continue;
+      //if (!(BaseIdx in List)) continue;
+      if(!List.isExist(BaseIdx)) continue;
 
       if (entry.IsMatch3()) {
         // 移除該組合中, 每一格在索引中的MatchGrid.
         var Pos = entry.m_AllGrid;
         for (var i = 0; i < Pos.length; ++i) {
           var Idx = this.GridPosToIdx2(Pos[i].x, Pos[i].y);
-          if (Idx in List) {
+          //if (Idx in List) {
+          if(List.isExist(Idx)) {
             List.remove(Idx);
             let idx = this.GridPosToIdx(Pos[i]);
             let gem = this.m_Grid[idx].gem;
